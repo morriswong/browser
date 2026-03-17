@@ -1,0 +1,5 @@
+node_modules/
+browse/dist/
+.gstack/
+bun.lock
+*.bun-build

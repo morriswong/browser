@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# browse skill setup — build the headless browser binary
+set -e
+
+SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"
+BROWSE_BIN="$SKILL_DIR/browse/dist/browse"
+
+# 1. Check for bun
+if ! command -v bun &>/dev/null; then
+  echo "Installing bun..."
+  curl -fsSL https://bun.sh/install | bash
+  export PATH="$HOME/.bun/bin:$PATH"
+fi
+
+# 2. Install dependencies
+echo "Installing dependencies..."
+cd "$SKILL_DIR"
+bun install
+
+# 3. Build browse binary
+NEEDS_BUILD=0
+if [ ! -x "$BROWSE_BIN" ]; then
+  NEEDS_BUILD=1
+elif [ -n "$(find "$SKILL_DIR/browse/src" -type f -newer "$BROWSE_BIN" -print -quit 2>/dev/null)" ]; then
+  NEEDS_BUILD=1
+elif [ "$SKILL_DIR/package.json" -nt "$BROWSE_BIN" ]; then
+  NEEDS_BUILD=1
+fi
+
+if [ "$NEEDS_BUILD" -eq 1 ]; then
+  echo "Building browse binary..."
+  mkdir -p "$SKILL_DIR/browse/dist"
+  bun build --compile browse/src/cli.ts --outfile browse/dist/browse
+  git rev-parse HEAD > browse/dist/.version 2>/dev/null || echo "unknown" > browse/dist/.version
+  rm -f .*.bun-build
+fi
+
+if [ ! -x "$BROWSE_BIN" ]; then
+  echo "Setup failed: browse binary missing at $BROWSE_BIN" >&2
+  exit 1
+fi
+
+# 4. Ensure Playwright Chromium is installed
+echo "Checking Playwright Chromium..."
+if ! bun --eval 'import { chromium } from "playwright"; const b = await chromium.launch(); await b.close();' &>/dev/null; then
+  echo "Installing Playwright Chromium..."
+  bunx playwright install chromium
+fi
+
+echo ""
+echo "browse skill ready."
+echo "  binary: $BROWSE_BIN"
+echo "  usage:  /browse in Claude Code"

@@ -1,0 +1,16 @@
+{
+  "name": "browse-skill",
+  "version": "1.0.0",
+  "description": "Standalone headless browser skill for Claude Code",
+  "type": "module",
+  "scripts": {
+    "build": "mkdir -p browse/dist && bun build --compile browse/src/cli.ts --outfile browse/dist/browse && echo 'standalone' > browse/dist/.version && rm -f .*.bun-build"
+  },
+  "dependencies": {
+    "playwright": "^1.58.2",
+    "diff": "^7.0.0"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}
